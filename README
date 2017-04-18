@@ -1,0 +1,5 @@
+Ideas for improvements:
+
+* [RLE] Handle both runs and literals (i.e. only encode a run if it has a certain number of repeats).
+* Split out algorithmic code into modules.
+* Other (better) compression algorithms.

@@ -2,6 +2,12 @@ use std::io;
 use std::io::Write;
 use std::io::stdout;
 
+#[derive(Debug,PartialEq)]
+enum RleComponent {
+    Run(usize, u8),
+    Literal(Vec<u8>)
+}
+
 fn main() {
     let mut input = String::new();
 
@@ -15,47 +21,72 @@ fn main() {
     println!("{:?}", decompressed);
 }
 
-fn rle(input: &str) -> Vec<(usize, u8)> {
-    // The funny thing about this function, is that it will probably have a
-    // negative compression ratio. But it's a decent starting point.
+fn rle(input: &str) -> Vec<RleComponent> {
     let mut last : u8 = input.bytes().nth(0).unwrap();
     let mut counter : usize = 0;
     let mut encoded = vec!();
-
 
     for bv in input.bytes() {
         if bv == last {
             counter += 1;
         } else {
-            encoded.push((counter, last));
+            if counter == 1 {
+                // TODO: Combine adjacent literals.
+                encoded.push(RleComponent::Literal(vec![last]));
+            } else {
+                encoded.push(RleComponent::Run(counter, last));
+            }
+
             counter = 1;
             last = bv;
         }
     }
-    encoded.push((counter, last));
+    // TODO: This repeated code isn't ideal.
+    if counter == 1 {
+        encoded.push(RleComponent::Literal(vec![last]));
+    } else {
+        encoded.push(RleComponent::Run(counter, last));
+    }
 
 
-    encoded.to_vec()
+    encoded//.to_vec()
 }
 
-fn rld(input: Vec<(usize, u8)>) -> String {
+fn rld(input: Vec<RleComponent>) -> String {
     let mut decoded = vec!();
-    for &(length, byte) in input.iter() {
-        for _ in 0..length {
-            decoded.push(byte);
+
+    for component in input {
+        match component {
+            RleComponent::Run(length, byte) => {
+                // TODO: Is there a better way to add
+                // repeated values to the end of a vec?
+                for _ in 0..length {
+                    decoded.push(byte);
+                }
+            },
+            RleComponent::Literal(bytes) => {
+                decoded.extend(bytes);
+            }
         }
     }
+
     String::from_utf8(decoded).unwrap()
 }
 
 mod tests {
     #[allow(unused_imports)] // Shouldn't warn when we're not running tests
     use super::*;
+
     #[test]
     fn basic_rle() {
         assert_eq!(
             rle("hello"),
-            [(1, 104), (1, 101), (2, 108), (1, 111)]
+            [
+                RleComponent::Literal(vec![104]),
+                RleComponent::Literal(vec![101]),
+                RleComponent::Run(2, 108),
+                RleComponent::Literal(vec![111])
+            ]
         );
     }
 
@@ -63,7 +94,12 @@ mod tests {
     fn with_trailing_run() {
         assert_eq!(
             rle("helloo"),
-            [(1, 104), (1, 101), (2, 108), (2, 111)]
+            [
+                RleComponent::Literal(vec![104]),
+                RleComponent::Literal(vec![101]),
+                RleComponent::Run(2, 108),
+                RleComponent::Run(2, 111),
+            ]
         );
     }
 
@@ -71,15 +107,27 @@ mod tests {
     fn moretests() {
         assert_eq!(
             rle("aaaaaab"),
-            [(6, 97), (1, 98)]
+            [
+                RleComponent::Run(6, 97),
+                RleComponent::Literal(vec![98]),
+            ]
         );
     }
+
 
     #[test]
     fn basic_rld() {
         assert_eq!(
             rld(rle("aabb")),
             "aabb"
+        );
+    }
+
+    #[test]
+    fn basic_rld_only_literal() {
+        assert_eq!(
+            rld(rle("ab")),
+            "ab"
         );
     }
 }
