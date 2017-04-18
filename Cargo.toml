@@ -1,0 +1,6 @@
+[package]
+name = "cram"
+version = "0.1.0"
+authors = ["matt-clement <clement.matthewp@gmail.com>"]
+
+[dependencies]
