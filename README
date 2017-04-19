@@ -1,6 +1,7 @@
 Ideas for improvements:
 
+* [RLE] General storage method (i.e. a simple byte stream, not a vec of enum members)
 * [RLE] Concatenate adjacent literals.
-* Split out algorithmic code into modules.
 * Other (better) compression algorithms.
+* ~~Split out algorithmic code into modules.~~
 * ~~[RLE] Handle both runs and literals (i.e. only encode a run if it has a certain number of repeats).~~
