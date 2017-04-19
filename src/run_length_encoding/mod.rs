@@ -39,11 +39,11 @@ pub fn decode(input: Vec<RleComponent>) -> String {
     let mut decoded = vec!();
 
     for component in input {
-        let tv = match component {
+        let next_sequence = match component {
             RleComponent::Run(length, byte) => vec![byte;length],
             RleComponent::Literal(bytes) => bytes,
         };
-        decoded.extend(tv);
+        decoded.extend(next_sequence);
     }
 
     String::from_utf8(decoded).unwrap()
