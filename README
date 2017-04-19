@@ -1,5 +1,6 @@
 Ideas for improvements:
 
+* Learn how to write good rust docs
 * [RLE] General storage method (i.e. a simple byte stream, not a vec of enum members)
 * [RLE] Concatenate adjacent literals.
 * Other (better) compression algorithms.

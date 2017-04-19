@@ -39,18 +39,11 @@ pub fn decode(input: Vec<RleComponent>) -> String {
     let mut decoded = vec!();
 
     for component in input {
-        match component {
-            RleComponent::Run(length, byte) => {
-                // TODO: Is there a better way to add
-                // repeated values to the end of a vec?
-                for _ in 0..length {
-                    decoded.push(byte);
-                }
-            },
-            RleComponent::Literal(bytes) => {
-                decoded.extend(bytes);
-            }
-        }
+        let tv = match component {
+            RleComponent::Run(length, byte) => vec![byte;length],
+            RleComponent::Literal(bytes) => bytes,
+        };
+        decoded.extend(tv);
     }
 
     String::from_utf8(decoded).unwrap()
