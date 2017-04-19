@@ -73,8 +73,8 @@ fn rld(input: Vec<RleComponent>) -> String {
     String::from_utf8(decoded).unwrap()
 }
 
+#[cfg(test)]
 mod tests {
-    #[allow(unused_imports)] // Shouldn't warn when we're not running tests
     use super::*;
 
     #[test]
