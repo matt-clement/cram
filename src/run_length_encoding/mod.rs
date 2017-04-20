@@ -4,20 +4,37 @@ pub enum RleComponent {
     Literal(Vec<u8>)
 }
 
-pub fn encode(input: &str) -> Vec<RleComponent> {
-    let mut last : u8 = input.bytes().nth(0).unwrap();
-    let mut counter : usize = 0;
-    let mut encoded = vec!();
+struct Encoder {
+    working_values: Vec<u8>,
+    components: Vec<RleComponent>,
+}
 
-    for bv in input.bytes() {
+impl Encoder {
+    fn new() -> Encoder {
+        Encoder { working_values: vec![], components: vec![] }
+    }
+
+    fn commit(&mut self, component: RleComponent) {
+        self.components.push(component);
+        self.working_values = vec![];
+    }
+}
+
+pub fn encode(input: &str) -> Vec<RleComponent> {
+    let mut encoder = Encoder::new();
+    let mut input_iter = input.bytes().peekable();
+    let mut last: u8 = input_iter.nth(0).unwrap();
+    let mut counter: usize = 1;
+
+    for bv in input_iter {
         if bv == last {
             counter += 1;
         } else {
             if counter == 1 {
                 // TODO: Combine adjacent literals.
-                encoded.push(RleComponent::Literal(vec![last]));
+                encoder.commit(RleComponent::Literal(vec![last]));
             } else {
-                encoded.push(RleComponent::Run(counter, last));
+                encoder.commit(RleComponent::Run(counter, last));
             }
 
             counter = 1;
@@ -26,13 +43,12 @@ pub fn encode(input: &str) -> Vec<RleComponent> {
     }
     // TODO: This repeated code isn't ideal.
     if counter == 1 {
-        encoded.push(RleComponent::Literal(vec![last]));
+        encoder.commit(RleComponent::Literal(vec![last]));
     } else {
-        encoded.push(RleComponent::Run(counter, last));
+        encoder.commit(RleComponent::Run(counter, last));
     }
 
-
-    encoded//.to_vec()
+    encoder.components
 }
 
 pub fn decode(input: Vec<RleComponent>) -> String {
@@ -63,6 +79,15 @@ mod tests {
                 RleComponent::Run(2, 108),
                 RleComponent::Literal(vec![111])
             ]
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn empty_encode() {
+        assert_eq!(
+            encode(""),
+            []
         );
     }
 
