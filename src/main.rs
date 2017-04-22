@@ -7,8 +7,6 @@ mod run_length_encoding;
 fn main() {
     let mut input = String::new();
 
-    println!("{:?}", vec![22;5]);
-
     print!("Enter text to encode: ");
     stdout().flush().unwrap();
     io::stdin().read_line(&mut input).unwrap();
