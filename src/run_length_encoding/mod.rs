@@ -1,3 +1,4 @@
+use std;
 #[derive(Debug,PartialEq)]
 pub enum RleComponent {
     Run(usize, u8),
@@ -5,18 +6,51 @@ pub enum RleComponent {
 }
 
 struct Encoder {
-    working_values: Vec<u8>,
+    working_component: Option<RleComponent>,
     components: Vec<RleComponent>,
 }
 
 impl Encoder {
     fn new() -> Encoder {
-        Encoder { working_values: vec![], components: vec![] }
+        Encoder {
+            working_component: None,
+            components: vec![],
+        }
     }
 
-    fn commit(&mut self, component: RleComponent) {
-        self.components.push(component);
-        self.working_values = vec![];
+    fn commit(&mut self) {
+        let wc = std::mem::replace(&mut self.working_component, None);
+        if let Some(component) = wc {
+            self.components.push(component);
+        }
+    }
+
+    fn append(&mut self, component: RleComponent) {
+        match component {
+            RleComponent::Run(_, _) => {
+                self.commit();
+                self.working_component = Some(component);
+            },
+            RleComponent::Literal(new_val) => {
+                match self.working_component {
+                    Some(RleComponent::Run(_, _)) => {
+                        self.commit();
+                        self.working_component = Some(RleComponent::Literal(new_val));
+                    }
+                    Some(RleComponent::Literal(ref mut vals)) => {
+                        vals.extend(new_val);
+                    }
+                    None => {
+                        self.working_component = Some(RleComponent::Literal(new_val));
+                    }
+                }
+            }
+        }
+    }
+
+    fn finish(mut self) -> Vec<RleComponent> {
+        self.commit();
+        self.components
     }
 }
 
@@ -31,10 +65,9 @@ pub fn encode(input: &str) -> Vec<RleComponent> {
             counter += 1;
         } else {
             if counter == 1 {
-                // TODO: Combine adjacent literals.
-                encoder.commit(RleComponent::Literal(vec![last]));
+                encoder.append(RleComponent::Literal(vec![last]));
             } else {
-                encoder.commit(RleComponent::Run(counter, last));
+                encoder.append(RleComponent::Run(counter, last));
             }
 
             counter = 1;
@@ -43,12 +76,12 @@ pub fn encode(input: &str) -> Vec<RleComponent> {
     }
     // TODO: This repeated code isn't ideal.
     if counter == 1 {
-        encoder.commit(RleComponent::Literal(vec![last]));
+        encoder.append(RleComponent::Literal(vec![last]));
     } else {
-        encoder.commit(RleComponent::Run(counter, last));
+        encoder.append(RleComponent::Run(counter, last));
     }
 
-    encoder.components
+    encoder.finish()
 }
 
 pub fn decode(input: Vec<RleComponent>) -> String {
@@ -74,8 +107,7 @@ mod tests {
         assert_eq!(
             encode("hello"),
             [
-                RleComponent::Literal(vec![104]),
-                RleComponent::Literal(vec![101]),
+                RleComponent::Literal(vec![104, 101]),
                 RleComponent::Run(2, 108),
                 RleComponent::Literal(vec![111])
             ]
@@ -96,8 +128,7 @@ mod tests {
         assert_eq!(
             encode("helloo"),
             [
-                RleComponent::Literal(vec![104]),
-                RleComponent::Literal(vec![101]),
+                RleComponent::Literal(vec![104, 101]),
                 RleComponent::Run(2, 108),
                 RleComponent::Run(2, 111),
             ]
